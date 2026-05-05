@@ -31,16 +31,6 @@ const UserList = () => {
     <div className="container mx-auto p-4">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">User List</h1>
-        <div>
-          <a
-            href="https://github.com/Muurtaja/nextjs-mysql-example"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-500 hover:underline"
-          >
-            GitHub
-          </a>
-        </div>
       </div>
       <CreateUser fetchUsers={fetchUsers} />
       <ul className="space-y-4">
