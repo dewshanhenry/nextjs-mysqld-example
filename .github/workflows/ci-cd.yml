@@ -5,6 +5,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy to production
+        required: true
+        type: boolean
+        default: true
 
 jobs:
   build-and-test:
@@ -29,18 +35,35 @@ jobs:
         run: npm run build
 
   deploy-production:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'true')
     needs: build-and-test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
+      - name: Validate required secrets
+        run: |
+          test -n "${{ secrets.PROD_HOST }}"
+          test -n "${{ secrets.PROD_USER }}"
+          test -n "${{ secrets.PROD_SSH_KEY }}"
+          test -n "${{ secrets.REPO_URL }}"
+          test -n "${{ secrets.APP_DIR }}"
+
+      - name: Deployment target info
+        run: |
+          echo "Deploying to host: ${{ secrets.PROD_HOST }}"
+          echo "Deploying with user: ${{ secrets.PROD_USER }}"
+          echo "Deploying app dir: ${{ secrets.APP_DIR }}"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.PROD_HOST }}
           username: ${{ secrets.PROD_USER }}
+          port: ${{ secrets.PROD_PORT || 22 }}
           key: ${{ secrets.PROD_SSH_KEY }}
           script_stop: true
           script: |
+            set -euo pipefail
             APP_DIR="${{ secrets.APP_DIR }}"
             REPO_URL="${{ secrets.REPO_URL }}"
             BRANCH="main"
@@ -56,4 +79,7 @@ jobs:
             git checkout "$BRANCH"
             git reset --hard "origin/$BRANCH"
 
+            test -f .env
+            docker compose pull
             docker compose up -d --build
+            docker compose ps
