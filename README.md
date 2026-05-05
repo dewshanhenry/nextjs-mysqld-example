@@ -1,2 +1,2 @@
-# nextjs-mysqld-example
+# nextjs-mysqld-examples
 nextjs-mysqld-example
